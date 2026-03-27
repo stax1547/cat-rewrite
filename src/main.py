@@ -76,6 +76,19 @@ def main() -> None:
         if bot.auto_sync_commands:
             await bot.sync_commands()
 
+        guild_count = db_cursor.execute("SELECT COUNT(*) FROM 'ChannelsPerGuild'", ).fetchone()[0]
+
+        activity = discord.Activity(
+            type=discord.ActivityType.playing,
+            name=f"Tracking in {guild_count} servers!"
+        )
+
+        # mylist = ["Voxel Venture", "REx: Reincarnated", "Stellar Planets 🪐", "Earth's Bounty", "The Celestial Caverns", "Azure Mines", "Malachite Miners 2", "Untitled Mining Game"]
+        await bot.change_presence(
+            status=discord.Status.online,
+            activity=activity
+        )
+
     @bot.event
     async def on_message(message: discord.Message) -> None:
         if message.channel.id in REX_TRACKER_CHANNEL_IDS and message.author.id in REX_WEBHOOK_UIDS and bot.is_ready() == True:
