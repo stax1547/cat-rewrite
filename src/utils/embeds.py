@@ -26,10 +26,9 @@ def create_embed(
     base_rarity: int = get_ore_rarity(ore_name=ore_name, base_rarity=ore_rarity, ore_type=ore_type, cave_type=cave_type,
                                       loadout=loadout, do_adjusted=False, run_nebulova=True)
 
-    embed: discord.Embed = discord.Embed()
+    embed: discord.Embed = discord.Embed(color=TIER_NAME_TO_COLOR_HEX.get(ore_tier, 0))
     embed.title = f"**{username}** has found {"a spectral " if ore_type == "SPECTRAL" else "an ionized " if ore_type == "IONIZED" else ""}**{ore_name}**{f' (*{cave_type}*)' if cave_type else ''}"
     embed.description = world
-    embed.colour = TIER_NAME_TO_COLOR_HEX.get(ore_tier, 0)
 
     embed.add_field(name="Rarity", value=f"1/{ore_rarity:,}", inline=True)
     embed.add_field(name="Blocks Mined", value=f"{blocks_mined:,}", inline=True)
@@ -101,7 +100,9 @@ async def send_data(
         player_dict.setdefault(guild_id, []).append(_username)
 
     for guild_id, tracker_channel_id, global_channel_id in channel_data:
-        players: list[str] = player_dict.get(int(guild_id))
+        players: list[str] = player_dict.get(int(guild_id), [])
+        if not players or not len(players):
+            continue
         # stax; use lower() so that people dont have to put exact users. roblox doesnt allow names with different cases but same letters anyways
         # this checks if the username is tracked in this server.
         if username.lower() in [player.lower() for player in players]:

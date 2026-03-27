@@ -73,17 +73,18 @@ class MainCommands(commands.Cog):
                 await ctx.respond(content="You cannot set the global channel to same channel as the tracker channel")
                 return
 
-        db_cursor.execute(
-            """
-            UPDATE ChannelsPerGuild SET global_channel_id = ? WHERE guild_id = ?
-            """,
-            (channel.id, ctx.guild_id,)
-        )
-
-        if db_cursor.rowcount == 0:
+        if not tracker_channel_id:
             await ctx.respond(content="Set a tracker channel first.")
             return
         else:
+            db_cursor.execute(
+                """
+                UPDATE ChannelsPerGuild
+                SET global_channel_id = ?
+                WHERE guild_id = ?
+                """,
+                (channel.id, ctx.guild_id,)
+            )
             db_conn.commit()
         await ctx.respond(content=f"Set global channel set to {channel.mention}")
 
