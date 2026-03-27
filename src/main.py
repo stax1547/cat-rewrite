@@ -76,8 +76,7 @@ def main() -> None:
         if bot.auto_sync_commands:
             await bot.sync_commands()
 
-        guild_count = db_cursor.execute("SELECT COUNT(*) FROM 'ChannelsPerGuild'", ).fetchone()[0]
-
+        guild_count = db_cursor.execute("SELECT COUNT(*) FROM ChannelsPerGuild", ).fetchone()[0]
         activity = discord.Activity(
             type=discord.ActivityType.playing,
             name=f"Tracking in {guild_count} servers!"
