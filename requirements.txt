@@ -1,0 +1,4 @@
+py-cord==2.7.1
+aiohttp==3.13.3
+requests==2.33.0
+python-dotenv==1.2.2
