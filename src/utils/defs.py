@@ -18,7 +18,8 @@ REX_TRACKER_CHANNEL_IDS = [
 db_conn = sqlite3.connect("database.db")
 db_cursor = db_conn.cursor()
 
-with open("cave_ores.json", "r", encoding="utf-8") as cave_ores_json:
+# stax; don't remove the src/ prefix because cybrancee will shit itself
+with open("src/cave_ores.json", "r", encoding="utf-8") as cave_ores_json:
     CAVE_ORES: dict = json.load(cave_ores_json)
 
 logger = logging.getLogger(name="logger")
