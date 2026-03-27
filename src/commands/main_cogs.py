@@ -8,6 +8,7 @@ from discord.ext import commands
 
 from utils.defs import *
 from utils.embeds import send_data
+from utils.utils import is_owner
 
 
 class MainCommands(commands.Cog):
@@ -41,7 +42,7 @@ class MainCommands(commands.Cog):
     @commands.slash_command()
     @discord.guild_only()
     async def set_tracker(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
-        if not ctx.author.guild_permissions.administrator:
+        if not ctx.author.guild_permissions.administrator and not is_owner(ctx.author.id):
             await ctx.respond(content="You do not have admin permissions")
             return
 
@@ -60,7 +61,7 @@ class MainCommands(commands.Cog):
     @commands.slash_command()
     @discord.guild_only()
     async def set_global_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
-        if not ctx.author.guild_permissions.administrator:
+        if not ctx.author.guild_permissions.administrator and not is_owner(ctx.author.id):
             await ctx.respond(content="You do not have admin permissions")
             return
 
@@ -89,7 +90,7 @@ class MainCommands(commands.Cog):
     @commands.slash_command()
     @discord.guild_only()
     async def remove_global_channel(self, ctx: discord.ApplicationContext):
-        if not ctx.author.guild_permissions.administrator:
+        if not ctx.author.guild_permissions.administrator and not is_owner(ctx.author.id):
             await ctx.respond(content="You do not have admin permissions")
             return
 
@@ -145,7 +146,7 @@ class MainCommands(commands.Cog):
     @commands.slash_command()
     @discord.guild_only()
     async def set_global_message(self, ctx: discord.ApplicationContext, message: str):
-        if not ctx.author.guild_permissions.administrator:
+        if not ctx.author.guild_permissions.administrator and not is_owner(ctx.author.id):
             await ctx.respond(content="You do not have admin permissions")
             return
 
@@ -165,7 +166,7 @@ class MainCommands(commands.Cog):
     @commands.slash_command()
     @discord.guild_only()
     async def remove_global_message(self, ctx: discord.ApplicationContext):
-        if not ctx.author.guild_permissions.administrator:
+        if not ctx.author.guild_permissions.administrator and not is_owner(ctx.author.id):
             await ctx.respond(content="You do not have admin permissions")
             return
 
@@ -177,7 +178,7 @@ class MainCommands(commands.Cog):
     @commands.slash_command()
     @discord.guild_only()
     async def add_to_tracker(self, ctx: discord.ApplicationContext, usernames: str):
-        if not ctx.author.guild_permissions.administrator:
+        if not ctx.author.guild_permissions.administrator and not is_owner(ctx.author.id):
             await ctx.respond(content="You do not have admin permissions")
             return
 
@@ -231,7 +232,7 @@ class MainCommands(commands.Cog):
     @commands.slash_command()
     @discord.guild_only()
     async def remove_from_tracker(self, ctx: discord.ApplicationContext, usernames: str):
-        if not ctx.author.guild_permissions.administrator:
+        if not ctx.author.guild_permissions.administrator and not is_owner(ctx.author.id):
             await ctx.respond(content="You do not have admin permissions")
             return
 

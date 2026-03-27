@@ -234,7 +234,7 @@ def get_ore_rarity(
     If run_nebulova = True, fix the ore rarity for nebulova event for ores that spawn 'out-of-cave' through it. The REx tracker does not account for this, so we have to multiply rarities by 3.
     """
     if do_adjusted:
-        if not cave_type or not CAVE_ORES:
+        if not cave_type:
             return base_rarity
 
         if run_nebulova and ore_name in CAVE_ORES["Starry Cave"]["ores"]:
@@ -268,8 +268,11 @@ def get_ore_rarity(
             }
             return ores.get(ore_name, 0)
 
-        if run_nebulova and CAVE_ORES is not None and cave_type is not None and ore_name in CAVE_ORES["Starry Cave"][
+        if run_nebulova is not None and cave_type is not None and ore_name in CAVE_ORES["Starry Cave"][
             "ores"] and cave_type != "Starry Cave" and cave_type != "Gilded Cave":
             base_rarity = CAVE_ORES["Starry Cave"]["ores"][ore_name][ORE_TYPE_TO_RANK.get(ore_type)] * 3
 
         return base_rarity
+
+def is_owner(user_id: int) -> bool:
+    return user_id == 475737475470589952
