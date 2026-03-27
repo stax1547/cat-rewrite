@@ -30,7 +30,10 @@ def create_embed(
     embed.title = f"**{username}** has found {"a spectral " if ore_type == "SPECTRAL" else "an ionized " if ore_type == "IONIZED" else ""}**{ore_name}**{f' (*{cave_type}*)' if cave_type else ''}"
     embed.description = world
 
-    embed.add_field(name="Rarity", value=f"1/{ore_rarity:,}", inline=True)
+    if cave_type:
+        embed.add_field(name="Rarity", value=f"1/{ore_rarity:,} in {cave_type}s", inline=True)
+    else:
+        embed.add_field(name="Rarity", value=f"1/{ore_rarity:,}", inline=True)
     embed.add_field(name="Blocks Mined", value=f"{blocks_mined:,}", inline=True)
     embed.add_field(name="Event", value=event, inline=True)
     embed.add_field(name="Loadout", value=loadout, inline=False)

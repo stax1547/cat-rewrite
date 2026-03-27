@@ -276,4 +276,8 @@ def get_ore_rarity(
 
 
 def is_owner(user_id: int) -> bool:
+    """
+    Returns if the user is the owner of this bot
+    Used for commands so you can override permissions and run anything
+    """
     return user_id == 475737475470589952
