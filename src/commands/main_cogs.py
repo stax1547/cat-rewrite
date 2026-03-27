@@ -33,7 +33,7 @@ class MainCommands(commands.Cog):
     @commands.is_owner()
     async def reload_cogs(self, ctx: discord.ApplicationContext, sync: bool):
         self.bot.reload_extension("commands.main_cogs")
-        self.bot_reload_extension("commands.misc_cogs")
+        self.bot.reload_extension("commands.misc_cogs")
         if sync:
             await self.bot.sync_commands()
 
@@ -256,7 +256,7 @@ class MainCommands(commands.Cog):
 
         db_conn.commit()
 
-        await ctx.respond(content=f"Removed users `{', '.join(f'`{u}`' for u in removed_users)}`")
+        await ctx.respond(content=f"Removed users {', '.join(f'`{u}`' for u in removed_users)}")
 
 
 def setup(_bot: discord.Bot) -> None:
