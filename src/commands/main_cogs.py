@@ -66,7 +66,7 @@ class MainCommands(commands.Cog):
             return
 
         tracker_channel_id: list | int = db_cursor.execute(
-            "SELECT tracker_channel_id FROM ChannelsPerGuild WHERE guild_id = ?", (channel.id,)).fetchone()
+            "SELECT tracker_channel_id FROM ChannelsPerGuild WHERE guild_id = ?", (ctx.guild_id,)).fetchone()
         if tracker_channel_id:
             tracker_channel_id = tracker_channel_id[0]
             if channel.id == tracker_channel_id:
