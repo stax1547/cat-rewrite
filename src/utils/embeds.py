@@ -38,9 +38,9 @@ def create_embed(
     if cave_type:
         # TODO: stax; add adjusted rarity options.
         # stax; use run_nebulova = False because base_rarity calculations above already account for it.
-        adjusted_rarity: int = get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type,
+        adjusted_rarity: int = round(get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type,
                                               cave_type=cave_type, loadout=loadout, do_adjusted=True,
-                                              run_nebulova=False) * decimal.Decimal(1.88)
+                                              run_nebulova=False) * decimal.Decimal(1.88))
         embed.add_field(name="Adjusted Rarity", value=f"1/{adjusted_rarity:,}", inline=False)
 
     # stax; prevent the bot from sending something that is too long
