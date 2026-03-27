@@ -33,7 +33,7 @@ class MainCommands(commands.Cog):
     @commands.is_owner()
     async def reload_cogs(self, ctx: discord.ApplicationContext, sync: bool):
         self.bot.reload_extension("commands.main_cogs")
-        # self.bot_reload_extension("commands.misc_cogs")
+        self.bot_reload_extension("commands.misc_cogs")
         if sync:
             await self.bot.sync_commands()
 
