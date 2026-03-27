@@ -149,7 +149,7 @@ class MainCommands(commands.Cog):
 
         db_cursor.execute(
             """
-            INSERT INTO ChannelsPerGuild (guild_id, message)
+            INSERT INTO GlobalMessagePerGuild (guild_id, message)
             VALUES (?, ?)
             ON CONFLICT(guild_id)
                 DO UPDATE SET message = excluded.message
