@@ -274,5 +274,6 @@ def get_ore_rarity(
 
         return base_rarity
 
+
 def is_owner(user_id: int) -> bool:
     return user_id == 475737475470589952
