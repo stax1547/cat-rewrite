@@ -74,14 +74,16 @@ class MainCommands(commands.Cog):
 
         db_cursor.execute(
             """
-            INSERT INTO ChannelsPerGuild (guild_id, global_channel_id)
-            VALUES (?, ?)
-            ON CONFLICT(guild_id)
-                DO UPDATE SET global_channel_id = excluded.global_channel_id
+            UPDATE ChannelsPerGuild SET global_channel_id = ? WHERE guild_id = ?
             """,
             (channel.id, ctx.guild_id,)
         )
-        db_conn.commit()
+
+        if db_cursor.rowcount == 0:
+            await ctx.respond(content="Set a tracker channel first.")
+            return
+        else:
+            db_conn.commit()
         await ctx.respond(content=f"Set global channel set to {channel.mention}")
 
     @commands.slash_command()
@@ -221,6 +223,8 @@ class MainCommands(commands.Cog):
                 message += f"\nSkipped adding existing users: {', '.join(f'`{u}`' for u in existing_users)}"
             else:
                 message += f"Skipped adding existing users: {', '.join(f'`{u}`' for u in existing_users)}"
+        if not len(message):
+            message = "No users added"
 
         await ctx.respond(content=message)
 

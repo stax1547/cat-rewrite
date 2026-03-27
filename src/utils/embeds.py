@@ -1,4 +1,5 @@
 from discord import Embed
+import decimal
 
 from utils.defs import *
 from utils.utils import get_ore_rarity
@@ -40,7 +41,7 @@ def create_embed(
         # stax; use run_nebulova = False because base_rarity calculations above already account for it.
         adjusted_rarity: int = get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type,
                                               cave_type=cave_type, loadout=loadout, do_adjusted=True,
-                                              run_nebulova=False)
+                                              run_nebulova=False) * decimal.Decimal(1.88)
         embed.add_field(name="Adjusted Rarity", value=f"1/{adjusted_rarity:,}", inline=False)
 
     # stax; prevent the bot from sending something that is too long
@@ -96,8 +97,8 @@ async def send_data(
     # stax; populate our dictionary with the usernames and key it by guild id so we dont do queries for each guild id
     player_dict: dict[int, list[str]] = {}
     player_data: list = db_cursor.execute("SELECT guild_id, username from PlayersPerGuild").fetchall()
-    for guild_id, username in player_data:
-        player_dict.setdefault(guild_id, []).append(username)
+    for guild_id, _username in player_data:
+        player_dict.setdefault(guild_id, []).append(_username)
 
     for guild_id, tracker_channel_id, global_channel_id in channel_data:
         players: list[str] = player_dict.get(int(guild_id))
