@@ -32,7 +32,7 @@ class MiscCommands(commands.Cog):
     @commands.slash_command()
     @commands.guild_only()
     async def list_tracked_users(self, ctx: discord.ApplicationContext):
-        if not ctx.author.guild_permissions.administrator:
+        if not ctx.author.guild_permissions.administrator and not is_owner(ctx.author.id):
             await ctx.respond(content="You do not have admin permissions")
             return
 
