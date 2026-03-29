@@ -1,5 +1,5 @@
 from discord import Embed
-import decimal
+import decimal, aiohttp, os
 
 from utils.defs import *
 from utils.utils import get_ore_rarity
@@ -85,7 +85,7 @@ async def send_data(
                                         ore_tier=ore_tier, ore_type=ore_type, event=event, world=world,
                                         username=username, loadout=loadout, blocks_mined=blocks_mined,
                                         manual_tracked=manual_tracked)
-    if not embed:  # FIXME: stax; is this even needed?
+    if not embed:
         return
 
     # FIXME: stax; i'm too lazy to make this typing correct, just use a list instead of a specific type.
@@ -150,13 +150,39 @@ async def send_data(
                 else:
                     await tracker_channel.send(embed=embed)
 
-            # TODO: stax; remove when i find out these trackers work
-            logger.debug(
-                msg=f"sent tracker to server {guild_id} (tracker = {tracker_channel_id}, global = {global_channel_id}")
-
     # stax; send to channels it needs to be sent to.
-    # TODO: add rare ore tracker & beginner tracker support
-    if is_global:
+    if is_global and not manual_tracked:
         cat_global_channel: discord.TextChannel = bot.get_channel(1306083504370618470)
         if cat_global_channel:
             await cat_global_channel.send(embed=embed)
+
+    base_rarity: int = get_ore_rarity(ore_name=ore_name, base_rarity=ore_rarity, ore_type=ore_type, cave_type=cave_type,
+                                      loadout=loadout, do_adjusted=False, run_nebulova=True)
+    if blocks_mined <= 5000000:
+        cat_beginner_channel: discord.TextChannel = bot.get_channel(1311792395414667304)
+        if cat_beginner_channel:
+            if is_global or base_rarity >= 5_000_000_000:
+                await cat_beginner_channel.send(content="<@&1455083226828902566>", embed=embed)
+            else:
+                await cat_beginner_channel.send(embed=embed)
+
+        async with aiohttp.ClientSession() as session:  # sending to glaggleland
+            webhook = discord.Webhook.from_url(
+                url=os.getenv("GLAGGLELAND_WEBHOOK"),
+                session=session,
+            )
+            if is_global == True or base_rarity >= 5_000_000_000:
+                await webhook.send("<@&1326276408087023638>", embed=embed)
+            else:
+                await webhook.send(embed=embed)
+
+    adjusted_rarity = get_ore_rarity(ore_name, base_rarity, ore_type, cave_type, loadout, do_adjusted=True, run_nebulova=False) * decimal.Decimal(1.88)
+    cat_rare_ore_tracker_channel = bot.get_channel(1407955712209977415)
+    if cave_type is not None and adjusted_rarity >= 100_000_000_000:
+        await cat_rare_ore_tracker_channel.send("<@&1416256696384487525>", embed=embed)
+    elif tier_rank == OreTiers.IMAGINARY and ore_type != "NORMAL":
+        await cat_rare_ore_tracker_channel.send("<@&1466449671428767895> <@&1416256696384487525>", embed=embed)
+    elif tier_rank == OreTiers.IMAGINARY:
+        await cat_rare_ore_tracker_channel.send("<@&1466449671428767895>", embed=embed)
+    elif base_rarity >= 50_000_000_000:
+        await cat_rare_ore_tracker_channel.send("<@&1416256696384487525>", embed=embed)

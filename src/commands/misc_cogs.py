@@ -36,7 +36,7 @@ class MiscCommands(commands.Cog):
             await ctx.respond(content="You do not have admin permissions")
             return
 
-        users: list = db_cursor.execute("SELECT username FROM PlayersPerGuild WHERE guild_id = ? ORDER BY username ASC", (ctx.guild_id,)).fetchall()
+        users: list = db_cursor.execute("SELECT username FROM PlayersPerGuild WHERE guild_id = ? ORDER BY username COLLATE NOCASE ASC", (ctx.guild_id,)).fetchall()
         if not users:
             await ctx.respond("There is currently no users tracked")
             return
