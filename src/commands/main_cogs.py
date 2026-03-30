@@ -118,7 +118,7 @@ class MainCommands(commands.Cog):
 
     @commands.slash_command()
     @discord.guild_only()
-    async def remove_user_ping(self, ctx: discord.ApplicationContext, username: str):
+    async def remove_user_ping(self, ctx: discord.ApplicationContext):
         db_cursor.execute("DELETE FROM PingsPerUsername where user_id = ? AND guild_id = ?",
                           (ctx.author.id, ctx.guild_id,))
         db_conn.commit()

@@ -1,7 +1,8 @@
-import dotenv
 import os
 import re
 import traceback
+
+import dotenv
 
 from commands.cogs import setup_commands
 from utils.defs import *
@@ -19,8 +20,8 @@ def create_database() -> None:
         CREATE TABLE IF NOT EXISTS "PlayersPerGuild"
         (
             guild_id INTEGER NOT NULL,
-            username TEXT NOT NULL,
-            PRIMARY KEY(guild_id, username)
+            username TEXT    NOT NULL,
+            PRIMARY KEY (guild_id, username)
         )
         """
     )
@@ -31,7 +32,7 @@ def create_database() -> None:
         CREATE TABLE IF NOT EXISTS "GlobalMessagePerGuild"
         (
             guild_id INTEGER PRIMARY KEY,
-            message TEXT NOT NULL
+            message  TEXT NOT NULL
         )
         """
     )
@@ -41,9 +42,9 @@ def create_database() -> None:
         """
         CREATE TABLE IF NOT EXISTS "ChannelsPerGuild"
         (
-            guild_id INTEGER PRIMARY KEY,
+            guild_id           INTEGER PRIMARY KEY,
             tracker_channel_id INTEGER NOT NULL,
-            global_channel_id INTEGER
+            global_channel_id  INTEGER
         )
         """
     )
@@ -54,9 +55,20 @@ def create_database() -> None:
         CREATE TABLE IF NOT EXISTS "PingsPerUsername"
         (
             guild_id INTEGER NOT NULL,
-            username TEXT NOT NULL,
-            user_id INTEGER NOT NULL,
-            PRIMARY KEY(guild_id, username, user_id)
+            username TEXT    NOT NULL,
+            user_id  INTEGER NOT NULL,
+            PRIMARY KEY (guild_id, username, user_id)
+        )
+        """
+    )
+
+    # stax; Holds the adjusted rarity preferences for guilds
+    db_cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS "AdjustedPreferencesPerGuild"
+        (
+            guild_id   INTEGER PRIMARY KEY,
+            preference INTEGER NOT NULL DEFAULT 2
         )
         """
     )

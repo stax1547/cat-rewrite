@@ -1,5 +1,8 @@
+import decimal
+import os
+
+import aiohttp
 from discord import Embed
-import decimal, aiohttp, os
 
 from utils.defs import *
 from utils.utils import get_ore_rarity
@@ -20,6 +23,7 @@ def create_embed(
     loadout: str,
     blocks_mined: int,
     # misc
+    guild_id: int = None,
     manual_tracked: bool = False
 ) -> Embed | None:
     # stax; fix up ore rarity for stuff like nebulova event, or zanarchium being 0 rarity on tracker
@@ -28,7 +32,11 @@ def create_embed(
 
     embed: discord.Embed = discord.Embed(color=TIER_NAME_TO_COLOR_HEX.get(ore_tier, 0))
     embed.title = f"**{username}** has found {"a spectral " if ore_type == "SPECTRAL" else "an ionized " if ore_type == "IONIZED" else ""}**{ore_name}**{f' (*{cave_type}*)' if cave_type else ''}"
-    embed.description = world
+
+    if manual_tracked:
+        embed.description = f"[Manual Tracked]\n{world}"
+    else:
+        embed.description = world
 
     if cave_type:
         embed.add_field(name="Rarity", value=f"1/{ore_rarity:,} in {cave_type}s", inline=True)
@@ -39,12 +47,27 @@ def create_embed(
     embed.add_field(name="Loadout", value=loadout, inline=False)
 
     if cave_type:
-        # TODO: stax; add adjusted rarity options.
-        # stax; use run_nebulova = False because base_rarity calculations above already account for it.
-        adjusted_rarity: int = round(get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type,
-                                              cave_type=cave_type, loadout=loadout, do_adjusted=True,
-                                              run_nebulova=False) * decimal.Decimal(1.88))
-        embed.add_field(name="Adjusted Rarity", value=f"1/{adjusted_rarity:,}", inline=False)
+        adjusted_preference = db_cursor.execute("SELECT preference FROM AdjustedPreferencesPerGuild WHERE guild_id = ?",
+                                                (guild_id,)).fetchone()
+        print(adjusted_preference)
+        if adjusted_preference:
+            adjusted_preference = adjusted_preference[0]
+        else:
+            adjusted_preference = AdjustedPreferences.BOTH
+        if adjusted_preference != AdjustedPreferences.NONE:
+            # stax; use run_nebulova = False because base_rarity calculations above already account for it.
+            adjusted_rarity: int = get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type,
+                                                  cave_type=cave_type, loadout=loadout, do_adjusted=True,
+                                                  run_nebulova=False)
+            adjusted_rarity_cc = round(adjusted_rarity * decimal.Decimal(1.88))
+            match adjusted_preference:
+                case AdjustedPreferences.BASE:
+                    embed.add_field(name="Adjusted Rarity", value=f"1/{adjusted_rarity:,}", inline=False)
+                case AdjustedPreferences.CONSTANT:
+                    embed.add_field(name="Adjusted Rarity", value=f"1/{adjusted_rarity_cc:,}", inline=False)
+                case AdjustedPreferences.BOTH:
+                    embed.add_field(name="Adjusted Rarity",
+                                    value=f"1/{adjusted_rarity_cc:,} [CC] | 1/{adjusted_rarity:,}")
 
     # stax; prevent the bot from sending something that is too long
     # this is probably never going to be true (?), but i like to be safe
@@ -80,16 +103,7 @@ async def send_data(
             tier_rank >= OreTiers.ENIGMATIC and ore_type == "IONIZED") or (
                               tier_rank >= OreTiers.TRANSCENDENT and ore_type == "SPECTRAL")
 
-    # TODO: stax; move this into the for loop when we add commands that allow adjusted preference changing.
-    embed: discord.Embed = create_embed(ore_name=ore_name, ore_rarity=ore_rarity, cave_type=cave_type,
-                                        ore_tier=ore_tier, ore_type=ore_type, event=event, world=world,
-                                        username=username, loadout=loadout, blocks_mined=blocks_mined,
-                                        manual_tracked=manual_tracked)
-    if not embed:
-        return
-
-    # FIXME: stax; i'm too lazy to make this typing correct, just use a list instead of a specific type.
-    channel_data: list = db_cursor.execute(
+    channel_data: list[tuple[int, int, int]] = db_cursor.execute(
         """
         SELECT guild_id, tracker_channel_id, global_channel_id
         FROM ChannelsPerGuild
@@ -98,7 +112,7 @@ async def send_data(
 
     # stax; populate our dictionary with the usernames and key it by guild id so we dont do queries for each guild id
     player_dict: dict[int, list[str]] = {}
-    player_data: list = db_cursor.execute("SELECT guild_id, username from PlayersPerGuild").fetchall()
+    player_data: list[tuple[int, str]] = db_cursor.execute("SELECT guild_id, username from PlayersPerGuild").fetchall()
     for guild_id, _username in player_data:
         player_dict.setdefault(guild_id, []).append(_username)
 
@@ -113,6 +127,14 @@ async def send_data(
             if not tracker_channel:
                 logger.error(msg=f"could not find tracker channel {tracker_channel_id} in {guild_id}!")
                 # TODO: stax; remove the channel from the database if its not found.
+                continue
+
+            # TODO: stax; move this into the for loop when we add commands that allow adjusted preference changing.
+            embed: discord.Embed = create_embed(ore_name=ore_name, ore_rarity=ore_rarity, cave_type=cave_type,
+                                                ore_tier=ore_tier, ore_type=ore_type, event=event, world=world,
+                                                username=username, loadout=loadout, blocks_mined=blocks_mined,
+                                                guild_id=guild_id, manual_tracked=manual_tracked)
+            if not embed:
                 continue
 
             user_pings: list = db_cursor.execute(
@@ -176,7 +198,8 @@ async def send_data(
             else:
                 await webhook.send(embed=embed)
 
-    adjusted_rarity = get_ore_rarity(ore_name, base_rarity, ore_type, cave_type, loadout, do_adjusted=True, run_nebulova=False) * decimal.Decimal(1.88)
+    adjusted_rarity = get_ore_rarity(ore_name, base_rarity, ore_type, cave_type, loadout, do_adjusted=True,
+                                     run_nebulova=False) * decimal.Decimal(1.88)
     cat_rare_ore_tracker_channel = bot.get_channel(1407955712209977415)
     if cave_type is not None and adjusted_rarity >= 100_000_000_000:
         await cat_rare_ore_tracker_channel.send("<@&1416256696384487525>", embed=embed)
