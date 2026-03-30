@@ -163,3 +163,10 @@ CAVE_RARITIES = {
     "Peppermint Cave": 25,
     "Fireplace Cave": 33,
 }
+
+class AdjustedPreferences(enum.IntEnum):
+    NONE = 0,
+    BASE = 1,
+    CONSTANT = 2,
+    BOTH = 3,
+
