@@ -111,7 +111,7 @@ def main() -> None:
             fields = embed_data.fields
             ore_type = TYPE_BY_CHANNEL_IDS.get(message.channel.id, None)
             
-            reg = re.match("\*\*([a-zA-Z0-9_]+)\*\*.*\*\*(.*)\*\*(?:.*(\*(.* Cave)\*))?", embed_data.title)
+            reg = re.match("\*\*([a-zA-Z0-9_]+)\*\*.*\*\*(.*)\*\*(?:.*\(\*(.* Cave)\*\))?", embed_data.title)
             username: str = reg.group(1)
             ore_name: str = reg.group(2)
             cave_type: str | None = reg.group(3)
