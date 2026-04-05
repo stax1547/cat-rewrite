@@ -129,7 +129,6 @@ async def send_data(
                 # TODO: stax; remove the channel from the database if its not found.
                 continue
 
-            # TODO: stax; move this into the for loop when we add commands that allow adjusted preference changing.
             embed: discord.Embed = create_embed(ore_name=ore_name, ore_rarity=ore_rarity, cave_type=cave_type,
                                                 ore_tier=ore_tier, ore_type=ore_type, event=event, world=world,
                                                 username=username, loadout=loadout, blocks_mined=blocks_mined,
@@ -173,16 +172,23 @@ async def send_data(
                     await tracker_channel.send(embed=embed)
 
     # stax; send to channels it needs to be sent to.
+    embed: discord.Embed = create_embed(ore_name=ore_name, ore_rarity=ore_rarity, cave_type=cave_type,
+                                                ore_tier=ore_tier, ore_type=ore_type, event=event, world=world,
+                                                username=username, loadout=loadout, blocks_mined=blocks_mined,
+                                                guild_id=None, manual_tracked=False)
+    if not embed:
+        return
+    
     if is_global and not manual_tracked:
         cat_global_channel: discord.TextChannel = bot.get_channel(1306083504370618470)
         if cat_global_channel:
-            await cat_global_channel.send(embed=embed)
+                await cat_global_channel.send(embed=embed)
 
     base_rarity: int = get_ore_rarity(ore_name=ore_name, base_rarity=ore_rarity, ore_type=ore_type, cave_type=cave_type,
                                       loadout=loadout, do_adjusted=False, run_nebulova=True)
     if blocks_mined <= 5000000:
         cat_beginner_channel: discord.TextChannel = bot.get_channel(1311792395414667304)
-        if cat_beginner_channel:
+        if cat_beginner_channel and embed:
             if is_global or base_rarity >= 5_000_000_000:
                 await cat_beginner_channel.send(content="<@&1455083226828902566>", embed=embed)
             else:
