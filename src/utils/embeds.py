@@ -39,9 +39,9 @@ def create_embed(
         embed.description = world
 
     if cave_type:
-        embed.add_field(name="Rarity", value=f"1/{ore_rarity:,} in {cave_type}s", inline=True)
+        embed.add_field(name="Rarity", value=f"1/{base_rarity:,} in {cave_type}s", inline=True)
     else:
-        embed.add_field(name="Rarity", value=f"1/{ore_rarity:,}", inline=True)
+        embed.add_field(name="Rarity", value=f"1/{base_rarity:,}", inline=True)
     embed.add_field(name="Blocks Mined", value=f"{blocks_mined:,}", inline=True)
     embed.add_field(name="Event", value=event, inline=True)
     embed.add_field(name="Loadout", value=loadout, inline=False)
