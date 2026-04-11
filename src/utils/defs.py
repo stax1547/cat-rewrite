@@ -21,6 +21,8 @@ db_cursor = db_conn.cursor()
 # stax; don't remove the src/ prefix because cybrancee will shit itself
 with open("src/cave_ores.json", "r", encoding="utf-8") as cave_ores_json:
     CAVE_ORES: dict = json.load(cave_ores_json)
+with open("src/all_ores.json", "r", encoding="utf-8") as all_ores_json:
+    ALL_ORES: dict = json.load(all_ores_json)
 
 logger = logging.getLogger(name="logger")
 logging.basicConfig(

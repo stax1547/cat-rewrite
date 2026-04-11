@@ -4,6 +4,8 @@ from utils.defs import *
 
 
 class OreAttributes:
+    ion_mult: int = 0
+    tier_name: str = ""
     cave_type: str | None = None
     is_cave_exclusive: bool = False
 
@@ -218,6 +220,8 @@ def get_ore_attributes(ore_name: str) -> OreAttributes | None:
         return None
 
     ret_attribs: OreAttributes = OreAttributes()
+    ret_attribs.ion_mult = attributes[0]
+    ret_attribs.tier_name = attributes[1]
     ret_attribs.cave_type = attributes[2]
     ret_attribs.is_cave_exclusive = ore_name != "aurora polaris"
     return ret_attribs
@@ -281,3 +285,14 @@ def is_owner(user_id: int) -> bool:
     Used for commands so you can override permissions and run anything
     """
     return user_id == 475737475470589952
+
+
+def get_nth_word(string: str, n: int, delim: str | None = None) -> str | None:
+    """
+    Return the word at the nth position of the string.
+    Returns None if there is not n words in the string.
+    """
+    words: list[str] = string.split(sep=delim)
+    if 1 <= n <= len(words):
+        return words[n-1]
+    return None
