@@ -158,8 +158,7 @@ async def send_data(
                 if global_channel_id:
                     global_channel: discord.TextChannel = bot.get_channel(global_channel_id)
                     if not global_channel:
-                        logger.log(level=logging.ERROR,
-                                   objects=f"could not find global channel {global_channel} in {guild_id}!")
+                        logger.error(msg=f"could not find global channel {global_channel_id} in {guild_id}!")
                         # TODO: stax; remove the channel from the database if its not found.
                         continue
 
