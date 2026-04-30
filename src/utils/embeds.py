@@ -49,7 +49,6 @@ def create_embed(
     if cave_type:
         adjusted_preference = db_cursor.execute("SELECT preference FROM AdjustedPreferencesPerGuild WHERE guild_id = ?",
                                                 (guild_id,)).fetchone()
-        print(adjusted_preference)
         if adjusted_preference:
             adjusted_preference = adjusted_preference[0]
         else:
