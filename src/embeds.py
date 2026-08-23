@@ -224,12 +224,12 @@ async def send_data(
             cat_global_channel: DiscordChannel = await bot.get_or_fetch(object_type=discord.TextChannel, object_id=1306083504370618470)
             if cat_global_channel:
                 await cat_global_channel.send(embed=embed)
-            wdor_global_channel: DiscordChannel = bot.get_channel(object_type=discord.TextChannel, object_id=1508240892933443604)
+            wdor_global_channel: DiscordChannel = await bot.get_or_fetch(object_type=discord.TextChannel, object_id=1508240892933443604)
             if wdor_global_channel:
                 await wdor_global_channel.send(embed=embed)
 
         if blocks_mined <= 5000000:
-            cat_beginner_channel: DiscordChannel = bot.get_channel(object_type=discord.TextChannel, object_id=1311792395414667304)
+            cat_beginner_channel: DiscordChannel = await bot.get_or_fetch(object_type=discord.TextChannel, object_id=1311792395414667304)
             if cat_beginner_channel and embed:
                 if is_global or base_rarity >= 5_000_000_000:
                     await cat_beginner_channel.send(content="<@&1455083226828902566>", embed=embed)
