@@ -140,7 +140,7 @@ async def send_data(
         # stax; use lower() so that people dont have to put exact users. roblox doesnt allow names with different cases but same letters anyways
         # this checks if the username is tracked in this server.
         if username.lower() in [player.lower() for player in players]:
-            tracker_channel: DiscordChannel = bot.get_or_fetch(object_type=discord.TextChannel, object_id=tracker_channel_id)
+            tracker_channel: DiscordChannel = await bot.get_or_fetch(object_type=discord.TextChannel, object_id=tracker_channel_id)
             if tracker_channel is None:
                 logger.error(msg=f"[send_data] Couldn't find tracker channel {tracker_channel_id} in guild id {guild_id}!")
                 # TODO: stax; remove the channel from the database if its not found.
