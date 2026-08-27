@@ -1,5 +1,6 @@
 import discord, enum, json, logging, sqlite3
-from typing import TypeAlias
+from discord.ext import commands
+from typing import Any, TypeAlias
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -13,6 +14,19 @@ REX_TRACKER_CHANNEL_IDS: tuple[int, int, int] = (
 )  # stax; rex tracker channel ids, normal - spectral
 
 DiscordChannel: TypeAlias = discord.TextChannel | discord.VoiceChannel | discord.StageChannel | discord.Thread | discord.DMChannel | discord.GroupChannel | None
+
+class MissingPermissions(commands.CommandError):
+    """
+    Raised when a user runs a command and fails to have the correct permissions to run it.
+    """
+
+    # Copied from the base class, edited slightly
+    def __init__(self, message: str | None = None, *args: Any) -> None:
+        if message is not None:
+            new_message: str = discord.utils.escape_mentions(text=message)
+            super().__init__(new_message, *args)
+        else:
+            super().__init__(*args)
 
 db_conn: sqlite3.Connection = sqlite3.connect("database.db")
 db_cursor: sqlite3.Cursor = db_conn.cursor()

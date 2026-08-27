@@ -2,10 +2,10 @@
 Miscellaneous cogs. Put commands in here that are non-essential to the functionality of the bot.
 """
 
-import decimal, discord, traceback, utils
+import decimal, discord, utils
 
 from discord.ext import commands
-from defs import AdjustedPreferences, ALL_ORES, CAVE_ORES, db_conn, db_cursor, logger, OreTypes, PermissionLevel
+from defs import AdjustedPreferences, ALL_ORES, CAVE_ORES, db_conn, db_cursor, OreTypes
 
 def get_data_for_ore(ore_name: str, ore_rarity: int) -> utils.OreAttributes | None: 
     tier_name: str = "Common"
@@ -92,44 +92,27 @@ class MiscCommands(commands.Cog):
     def __init__(self, _bot: discord.Bot):
         self.bot = _bot
 
-    async def cog_command_error(self, ctx: discord.ApplicationContext, error: Exception):
-        if isinstance(error, commands.CommandOnCooldown):
-            await ctx.respond(f"This command is on cooldown. Retry in {error.retry_after} seconds", ephemeral=True)
-            return
-        elif isinstance(error, commands.NotOwner):
-            await ctx.respond(f"You are not the owner of this bot", ephemeral=True)
-            return
+    async def cog_command_error(self, ctx: discord.ApplicationContext, error: commands.CommandError):
+        await utils.handle_error(ctx=ctx, error=error) 
 
-        trace: str = traceback.format_exc()
-        if len(trace) > 1900:
-            trace = trace[-1900:]
-        logger.error(msg=trace)
-        await ctx.respond(content=f"An error occurred while running the command:\n```py\n{trace}\n```")
-
-    @commands.slash_command()
+    @commands.slash_command(description="List all usernames tracked in this server.")
     @commands.guild_only()
+    @commands.check(utils.permissions_check)
     async def list_tracked_users(self, ctx: discord.ApplicationContext):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         users: list = db_cursor.execute(
             "SELECT username FROM PlayersPerGuild WHERE guild_id = ? ORDER BY username COLLATE NOCASE ASC",
             (ctx.guild_id,)).fetchall()
         if not users:
-            await ctx.respond("There is currently no users tracked")
+            await ctx.respond("There are currently no users tracked.")
             return
 
         await ctx.respond(content=", ".join(user[0] for user in users))
 
-    @commands.slash_command()
+    @commands.slash_command(description="Set what should be used for the formatting on adjusted rarity.")
     @commands.guild_only()
     @discord.commands.option("preference", str, description="Adjusted rarity setting", choices=["No adjusted rarity", "No cave constant", "Use cave constant", "Show both"])
+    @commands.check(utils.permissions_check)
     async def set_adjusted_preference(self, ctx: discord.ApplicationContext, preference: str):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         match preference:
             case "No adjusted rarity":
                 _preference = AdjustedPreferences.NONE
@@ -152,9 +135,10 @@ class MiscCommands(commands.Cog):
             (ctx.guild_id, _preference,)
         )
         db_conn.commit()
-        await ctx.respond(content=f"Set adjusted preference to \"{preference}\"")
+        await ctx.respond(content=f"Set adjusted preference to \"{preference}\".")
 
     @commands.slash_command(
+            description="Provides info for an ore given the parameters.",
             integration_types={ discord.IntegrationType.user_install, discord.IntegrationType.guild_install } # Allow this to be used outside of servers where the bot is.
         )
     @commands.cooldown(rate=3, per=5, type=commands.BucketType.user)

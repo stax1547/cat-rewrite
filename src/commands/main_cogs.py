@@ -2,31 +2,20 @@
 Main cogs. Put commands in here that are essential to the functionality of the bot.
 """
 
-import discord, traceback, utils
+import discord, utils
 
 from discord.ext import commands
-from defs import logger, PermissionLevel, db_conn, db_cursor, TIER_NAME_TO_TIER_RANK
+from defs import db_conn, db_cursor, TIER_NAME_TO_TIER_RANK
 from embeds import send_data
 
 class MainCommands(commands.Cog):
     def __init__(self, _bot: discord.Bot):
         self.bot = _bot
 
-    async def cog_command_error(self, ctx: discord.ApplicationContext, error: Exception):
-        if isinstance(error, commands.CommandOnCooldown):
-            await ctx.respond(f"This command is on cooldown. Retry in {error.retry_after} seconds")
-            return
-        elif isinstance(error, commands.NotOwner):
-            await ctx.respond(f"You are not the owner of this bot")
-            return
+    async def cog_command_error(self, ctx: discord.ApplicationContext, error: commands.CommandError):
+        await utils.handle_error(ctx=ctx, error=error)
 
-        trace: str = traceback.format_exc()
-        if len(trace) > 1900: # Shorten it so it's below 2,000 characters for Discord
-            trace = trace[-1900:] + "..."
-        logger.error(msg=trace)
-        await ctx.respond(content=f"An error occurred while running the command:\n```py\n{trace}\n```")
-
-    @commands.slash_command()
+    @commands.slash_command(guild_ids=[1177151218049618031])
     @commands.is_owner()
     async def reload_cogs(self, ctx: discord.ApplicationContext, sync: bool):
         self.bot.reload_extension("commands.main_cogs")
@@ -36,14 +25,11 @@ class MainCommands(commands.Cog):
 
         await ctx.respond("Reloaded cogs")
 
-    @commands.slash_command()
+    @commands.slash_command(description="Sets a channel where all tracks will appear.")
     @discord.guild_only()
     @discord.commands.option("channel", discord.TextChannel, description="Text channel that the globals will be sent to")
+    @commands.check(utils.permissions_check)
     async def set_tracker(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         db_cursor.execute(
             """
             INSERT INTO ChannelsPerGuild (guild_id, tracker_channel_id)
@@ -54,27 +40,22 @@ class MainCommands(commands.Cog):
             (ctx.guild_id, channel.id,)
         )
         db_conn.commit()
-        await ctx.respond(content=f"Tracker set to {channel.mention}")
+        await ctx.respond(content=f"Tracker set to {channel.mention}.")
 
-    @commands.slash_command()
+    @commands.slash_command(description="Set a channel where globals will appear.")
     @discord.guild_only()
     @discord.commands.option("channel", discord.TextChannel, description="Text channel that the globals will be sent to")
+    @commands.check(utils.permissions_check)
     async def set_global_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         tracker_channel_id: list | int = db_cursor.execute(
             "SELECT tracker_channel_id FROM ChannelsPerGuild WHERE guild_id = ?", (ctx.guild_id,)).fetchone()
         if tracker_channel_id is not None and len(tracker_channel_id) != 0:
             tracker_channel_id = tracker_channel_id[0]
             if channel.id == tracker_channel_id:
-                await ctx.respond(content="You cannot set the global channel to same channel as the tracker channel")
-                return
+                return await ctx.respond(content="You cannot set the global channel to same channel as the tracker channel.")
 
         if tracker_channel_id is None:
-            await ctx.respond(content="Set a tracker channel first.")
-            return
+            return await ctx.respond(content="Set a tracker channel first.")
         else:
             db_cursor.execute(
                 """
@@ -85,21 +66,18 @@ class MainCommands(commands.Cog):
                 (channel.id, ctx.guild_id,)
             )
             db_conn.commit()
-        await ctx.respond(content=f"Set global channel set to {channel.mention}")
+        await ctx.respond(content=f"Set global channel set to {channel.mention}.")
 
-    @commands.slash_command()
+    @commands.slash_command(description="Remove the current global channel, if one exists.")
     @discord.guild_only()
+    @commands.check(utils.permissions_check)
     async def remove_global_channel(self, ctx: discord.ApplicationContext):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         db_cursor.execute("DELETE FROM ChannelsPerGuild WHERE guild_id = ?", (ctx.guild.id,))
         db_conn.commit()
 
-        await ctx.respond(content=f"Removed global channel")
+        await ctx.respond(content=f"Removed global channel.")
 
-    @commands.slash_command()
+    @commands.slash_command(description="Get pinged when the inputted username gets a track.")
     @discord.guild_only()
     @discord.commands.option("username", str, description="Roblox username")
     @discord.commands.option("globals_only", bool, description="Ping for globals only", required=False, default=False)
@@ -117,17 +95,17 @@ class MainCommands(commands.Cog):
             (ctx.guild_id, username, ctx.author.id, globals_only)
         )
         db_conn.commit()
-        await ctx.respond(content=f"You will now be pinged by tracks with the user \"{username}\"")
+        await ctx.respond(content=f"You will now be pinged by tracks with the user \"{username}\".")
 
-    @commands.slash_command()
+    @commands.slash_command(description="Remove all usernames to be pinged by that were set with set_user_ping.")
     @discord.guild_only()
     async def remove_user_ping(self, ctx: discord.ApplicationContext):
         db_cursor.execute("DELETE FROM PingsPerUsername where user_id = ? AND guild_id = ?",
                           (ctx.author.id, ctx.guild_id,))
         db_conn.commit()
-        await ctx.respond(content=f"Removed set pings in this server")
+        await ctx.respond(content=f"Removed set pings in this server.")
 
-    @commands.slash_command()
+    @commands.slash_command(description="Track an ore globally under a username. Only usable by whitelisted users.")
     @discord.commands.option("ore_name", str, description="The ore's name", autocomplete=utils.ore_name_autocomplete)
     @discord.commands.option("base_rarity", int, description="The rarity of the ore. Make sure to use variant rarity if it is a variant")
     @discord.commands.option("blocks_mined", int, description="The blocks mined")
@@ -138,6 +116,7 @@ class MainCommands(commands.Cog):
     @discord.commands.option("loadout", str, description="The loadout the person was using")
     @discord.commands.option("event", str, description="The active event during the ore find")
     @discord.commands.option("cave_type", str, description="The cave type that the ore was found in (Not required for cave exclusive ores)", autocomplete=utils.cave_type_autocomplete, required=False, default=None)
+    @commands.check(utils.whitelist_check)
     async def manual_track(
         self, ctx: discord.ApplicationContext,
         ore_name: str,
@@ -151,22 +130,16 @@ class MainCommands(commands.Cog):
         event: str,
         cave_type: str = None
     ):
-        if utils.get_permission_level(user_id=ctx.user.id) < PermissionLevel.ADMIN:
-            return await ctx.respond(content="You do not have permission to run this command.")
-
         await send_data(ore_name=ore_name, ore_rarity=base_rarity, cave_type=cave_type, ore_tier=tier,
                         ore_type=ore_type, event=event, world=world, username=username, loadout=loadout,
                         blocks_mined=blocks_mined, manual_tracked=True)
         await ctx.respond(content="Sent")
 
-    @commands.slash_command()
+    @commands.slash_command(description="Set a message that will be sent with global tracks.")
     @discord.guild_only()
     @discord.commands.option("message", str, description="The message that will be sent when a global is found. To input roles, use <@&role_id>")
+    @commands.check(utils.permissions_check)
     async def set_global_message(self, ctx: discord.ApplicationContext, message: str):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         db_cursor.execute(
             """
             INSERT INTO GlobalMessagePerGuild (guild_id, message)
@@ -178,28 +151,22 @@ class MainCommands(commands.Cog):
         )
         db_conn.commit()
 
-        await ctx.respond(content=f"Set global message to `{message}`")
+        await ctx.respond(content=f"Set global message to `{message}`.")
 
     @commands.slash_command()
     @discord.guild_only()
+    @commands.check(utils.permissions_check)
     async def remove_global_message(self, ctx: discord.ApplicationContext):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         db_cursor.execute("DELETE FROM GlobalMessagePerGuild WHERE guild_id = ?", (ctx.guild.id,))
         db_conn.commit()
 
-        await ctx.respond(content=f"Removed global message")
+        await ctx.respond(content=f"Removed global message.")
 
-    @commands.slash_command()
+    @commands.slash_command(description="Add usernames to the list of usernames to be tracked.")
     @discord.guild_only()
     @discord.commands.option("usernames", str, description="A list of usernames to add to the tracker. Separate usernames by a comma")
+    @commands.check(utils.permissions_check)
     async def add_to_tracker(self, ctx: discord.ApplicationContext, usernames: str):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         db_cursor.execute(
             """
             SELECT *
@@ -243,18 +210,15 @@ class MainCommands(commands.Cog):
             else:
                 message += f"Skipped adding existing users: {', '.join(f'`{u}`' for u in existing_users)}"
         if len(message) == 0:
-            message = "No users added"
+            message = "No users added."
 
         await ctx.respond(content=message)
 
-    @commands.slash_command()
+    @commands.slash_command(description="Remove usernames from the list of usernames to be tracked.")
     @discord.guild_only()
     @discord.commands.option("usernames", str, description="A list of usernames to remove from the tracker. Separate usernames by a comma")
+    @commands.check(utils.permissions_check)
     async def remove_from_tracker(self, ctx: discord.ApplicationContext, usernames: str):
-        if not ctx.author.guild_permissions.administrator and utils.get_permission_level(user_id=ctx.user.id) != PermissionLevel.OWNER:
-            await ctx.respond(content="You do not have admin permissions")
-            return
-
         # allow multiple usernames to be added at once
         to_be_removed: list[str] = [u.strip() for u in usernames.split(",")]
 

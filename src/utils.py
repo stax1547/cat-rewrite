@@ -1,5 +1,6 @@
-import config, decimal, discord, difflib
-from defs import ALL_ORES, bot, CAVE_ORES, OreTiers, ORE_TYPE_TO_RANK, PermissionLevel, TierNames 
+import config, discord, difflib, traceback
+from defs import ALL_ORES, bot, CAVE_ORES, logger, MissingPermissions, OreTiers, ORE_TYPE_TO_RANK, PermissionLevel, TierNames 
+from discord.ext import commands
 
 class OreAttributes:
     ion_mult: int = 0
@@ -323,8 +324,11 @@ def is_owner(user_id: int) -> bool:
 def get_permission_level(user_id: int) -> PermissionLevel:
     """
     Returns permission level for command usage. 
+
     Owner means they can run anything,
+
     Admin means they can run certain things others can't (manual track for example),
+    
     Default means no special permissions.
     """
 
@@ -333,11 +337,11 @@ def get_permission_level(user_id: int) -> PermissionLevel:
 
     permission_level: PermissionLevel = PermissionLevel.DEFAULT
 
-    bot_guild: discord.Guild | None = bot.get_guild(1177151218049618031)
+    bot_guild: discord.Guild | None = bot.get_or_fetch(object_type=discord.Guild, object_id=1177151218049618031)
     if bot_guild is None:
         return permission_level
     
-    member: discord.Member | None = bot_guild.get_member(user_id)
+    member: discord.Member | None = bot_guild.get_or_fetch(object_type=discord.Member, object_id=user_id)
     if member is None:
         return permission_level
     
@@ -392,6 +396,32 @@ def ore_name_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
 def cave_type_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
     if not ctx.value: return ["Enter a cave type!"]
     return [c for c in CAVE_ORES.keys() if ctx.value.lower() in c.lower()][:5]
+
+def permissions_check(ctx: commands.Context) -> bool:
+    if not ctx.author.guild_permissions.administrator and get_permission_level(user_id=ctx.author.id) != PermissionLevel.OWNER:
+        raise MissingPermissions()
+
+    return True
+
+def whitelist_check(ctx: commands.Context) -> bool:
+    if get_permission_level(user_id=ctx.author.id) < PermissionLevel.ADMIN:
+        raise MissingPermissions()
+
+    return True
+
+async def handle_error(ctx: discord.ApplicationContext, error: commands.CommandError):
+    if isinstance(error, commands.CommandOnCooldown):
+        return await ctx.respond(content=f"This command is on cooldown. Retry in {error.retry_after} seconds.", ephemeral=True)
+    elif isinstance(error, commands.NotOwner):
+        return await ctx.respond(content=f"You are not the owner of this bot.", ephemeral=True)
+    elif isinstance(error, MissingPermissions):
+        return await ctx.respond(content="You are missing the permissions required to run this command.", ephemeral=True)
+
+    trace: str = traceback.format_exc()
+    if len(trace) > 1900: # Shorten it so it's below 2,000 characters for Discord
+        trace = trace[-1900:] + "..."
+    logger.error(msg=trace)
+    await ctx.respond(content=f"An error occurred while running the command:\n```py\n{trace}\n```")
 
 def get_global_role_ping(ore_name: str, ore_rarity: int, ore_rank: OreTiers, ore_type: str, cave_type: str) -> str:
     # This sucks! but oh well.
