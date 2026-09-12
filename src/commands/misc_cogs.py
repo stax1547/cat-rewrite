@@ -262,9 +262,6 @@ class MiscCommands(commands.Cog):
         if is_nebulova_event:
             base_rarity *= 3
         elif cave_type == "Gilded Cave" and not is_cave_exclusive and ore_name != "Gold":
-        elif (
-            cave_type == "Gilded Cave" and not is_cave_exclusive and ore_name != "Gold"
-        ):
             base_rarity *= 2.5
 
         # IM TOO LAZY TO MAKE EMBEDS RN
