@@ -1,4 +1,6 @@
-import dotenv, re
+import re
+
+import dotenv
 
 dotenv_path: str = dotenv.find_dotenv()
 if dotenv_path == "":

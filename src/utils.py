@@ -1,12 +1,31 @@
-import config, discord, difflib, traceback
-from defs import ALL_ORES, bot, CAVE_ORES, logger, MissingPermissions, OreTiers, ORE_TYPE_TO_RANK, PermissionLevel, TierNames 
+import difflib
+import traceback
+
+import discord
 from discord.ext import commands
+
+import config
+from defs import (
+    ALL_ORES,
+    CAVE_ORES,
+    ORE_TYPE_TO_RANK,
+    MissingPermissions,
+    OreTiers,
+    PermissionLevel,
+    TierNames,
+    bot,
+    logger,
+)
+
 
 class OreAttributes:
     ion_mult: int = 0
     tier_name: str = ""
     cave_type: str | None = None
     is_cave_exclusive: bool = False
+    is_transformation_exclusive: bool = False
+    is_fusion_exclusive: bool = False
+
 
 # TODO: rewrite this function
 def get_ore_attributes(ore_name: str) -> OreAttributes | None:
@@ -252,19 +271,114 @@ def get_ore_attributes(ore_name: str) -> OreAttributes | None:
 
     attributes: list[int | str] | None = cave_exclusives.get(ore_name, None)
     if attributes is None:
-        return None
+        # Fusions & transformation exclusive ores
+        is_transformation_exclusive: bool = ore_name in (
+            "aquoralivis",
+            "krampus' seal",
+            "visteorite",
+            "interstellar vortex",
+            "nivarilte",
+            "stellarinkyte",
+            "zanivint",
+            "bellinium",
+            "isolyte",
+            "superunobtainium",
+        )
+        is_fusion_exclusive: bool = ore_name in (
+            "melodifrost",
+            "hypersomnia",
+            "speatritian",
+            "trifractite",
+            "aurora sanguinosa",
+            "enamorasure",
+            "glacereus",
+            "gravertia",
+            "næthyx",
+            "seraphyst",
+            "starpower",
+            "wintravesia",
+            "azimuth",
+            "la sangra",
+            "stygia",
+            "temporal prism",
+            "the tower",
+        )
 
-    ret_attribs: OreAttributes = OreAttributes()
-    ret_attribs.ion_mult = attributes[0]
-    ret_attribs.tier_name = attributes[1]
-    ret_attribs.cave_type = attributes[2]
-    ret_attribs.is_cave_exclusive = ore_name != "aurora polaris" # If we got to this point it's a cave exclusive ore.
-    return ret_attribs
+        if not is_transformation_exclusive and not is_fusion_exclusive:
+            return None
+
+        tier_name: str = TierNames.COMMON
+        ion_multiplier: int = common[0]
+        match ore_name:
+            case (
+                "speatritian"
+                | "trifractite"
+                | "visteorite"
+                | "interstellar vortex"
+                | "stellarinkyte"
+                | "zanivint"
+                | "bellinium"
+            ):
+                ion_multiplier = transcendent[0]
+                tier_name = TierNames.TRANSCENDENT
+            case "melodifrost":
+                ion_multiplier = exotic[0]
+                tier_name = TierNames.EXOTIC
+            case (
+                "aurora sanguinosa"
+                | "enamorasure"
+                | "glacereus"
+                | "gravertia"
+                | "næthyx"
+                | "seraphyst"
+                | "starpower"
+                | "wintravesia"
+                | "krampus' seal"
+                | "nivarilte"
+            ):
+                ion_multiplier = enigmatic[0]
+                tier_name = TierNames.ENIGMATIC
+            case (
+                "protoflare"
+                | "electrolyx"
+                | "eggsquisite"
+                | "hypersomnia"
+                | "aquoralivis"
+            ):
+                ion_multiplier = exquisite[0]
+                tier_name = TierNames.EXQUISITE
+            case "azimuth" | "la sangra" | "stygia" | "temporal prism" | "the tower":
+                ion_multiplier = unfathomable[0]
+                tier_name = TierNames.UNFATHOMABLE
+            case "superunobtainium":
+                ion_multiplier = mythic[0]
+                tier_name = TierNames.MYTHIC
+
+        return OreAttributes(
+            ion_mult=ion_multiplier,
+            tier_name=tier_name,
+            cave_type=None,
+            is_cave_exclusive=False,
+            is_transformation_exclusive=is_transformation_exclusive,
+            is_fusion_exclusive=is_fusion_exclusive,
+        )
+
+    return OreAttributes(
+        ion_mult=attributes[0],
+        tier_name=attributes[1],
+        cave_type=attributes[2],
+        is_cave_exclusive=ore_name != "aurora polaris",
+    )
+
 
 def get_ore_rarity(
-    ore_name: str, base_rarity: int, ore_type: str,
-    cave_type: str | None, loadout: str | None, do_adjusted: bool,
-    run_nebulova: bool
+    ore_name: str,
+    base_rarity: int,
+    ore_type: str,
+    cave_type: str | None,
+    loadout: str | None,
+    do_adjusted: bool,
+    run_nebulova: bool,
 ) -> int:
     """
     Returns an ore's fixed rarity based on the parameters passed in.
@@ -280,14 +394,12 @@ def get_ore_rarity(
             if cave_attributes is not None:
                 is_cave_exclusive = cave_attributes.is_cave_exclusive
 
-                if cave_type == "Gilded Cave" and is_cave_exclusive:
-                    base_rarity = CAVE_ORES["Starry Cave"]["ores"][ore_name][ORE_TYPE_TO_RANK.get(ore_type)] * 3
-                elif cave_type != "Starry Cave" and cave_type != "Gilded Cave":
+                if cave_type == "Gilded Cave" and is_cave_exclusive or cave_type != "Starry Cave" and cave_type != "Gilded Cave":
                     base_rarity = CAVE_ORES["Starry Cave"]["ores"][ore_name][ORE_TYPE_TO_RANK.get(ore_type)] * 3
 
         if loadout is not None:  # prevent IndexError in split
-            salad_57 = True if ("Ambrosia Salad" in loadout or loadout.split(", ")[0] == "57 Leaf Clover") else False
-            salad_100 = True if (loadout.split(", ")[0] == "100 Leaf Clover") else False
+            salad_57 = "Ambrosia Salad" in loadout or loadout.split(", ")[0] == "57 Leaf Clover"
+            salad_100 = loadout.split(", ")[0] == "100 Leaf Clover"
         else:
             salad_57 = False
             salad_100 = False
@@ -314,6 +426,7 @@ def get_ore_rarity(
 
         return base_rarity
 
+
 def is_owner(user_id: int) -> bool:
     """
     Returns if the user is the owner of this bot.
@@ -321,19 +434,20 @@ def is_owner(user_id: int) -> bool:
     """
     return config.DEV_MODE or user_id == 475737475470589952
 
+
 def get_permission_level(user_id: int) -> PermissionLevel:
     """
-    Returns permission level for command usage. 
+    Returns permission level for command usage.
 
     Owner means they can run anything,
 
     Admin means they can run certain things others can't (manual track for example),
-    
+
     Default means no special permissions.
     """
 
     if is_owner(user_id=user_id):
-        return PermissionLevel.OWNER # No need to do anything else
+        return PermissionLevel.OWNER  # No need to do anything else
 
     permission_level: PermissionLevel = PermissionLevel.DEFAULT
 
@@ -352,8 +466,9 @@ def get_permission_level(user_id: int) -> PermissionLevel:
             permission_level = PermissionLevel.OWNER
         elif whitelist_role in member.roles:
             permission_level = PermissionLevel.ADMIN
-    
+
     return permission_level
+
 
 def get_nth_word(string: str, n: int, delim: str | None = None) -> str | None:
     """
@@ -362,23 +477,24 @@ def get_nth_word(string: str, n: int, delim: str | None = None) -> str | None:
     """
     words: list[str] = string.split(sep=delim)
     if 1 <= n <= len(words):
-        return words[n-1]
+        return words[n - 1]
     return None
+
 
 def find_closest_names(ore_name: str) -> list[str] | str | None:
     ore_name = ore_name.lower()
-    symbol_ores_list: tuple[str] = ('sigma', 'pi', 'omega', 'lunar omega', 'delta', 'psi', 'infinictrite', 'noopa', 'noo p a')
-    number_ores_list: tuple[str] = ('combustion system', 'trojan')
+    symbol_ores_list: tuple[str] = ("sigma", "pi", "omega", "lunar omega", "delta", "psi", "infinictrite", "noopa", "noo p a")
+    number_ores_list: tuple[str] = ("combustion system", "trojan")
     if ore_name in symbol_ores_list:
-        return ('Σ', 'π', 'Ω', 'Lunar Ω', 'Δ', 'ψ', '∞', 'NOO P α', 'NOO P α')[symbol_ores_list.index(ore_name)]
+        return ("Σ", "π", "Ω", "Lunar Ω", "Δ", "ψ", "∞", "NOO P α", "NOO P α")[symbol_ores_list.index(ore_name)]
     elif ore_name in number_ores_list:
-        return ('@Combust10n_+_Syst3m', 'TR0J4N')[number_ores_list.index(ore_name)]
+        return ("@Combust10n_+_Syst3m", "TR0J4N")[number_ores_list.index(ore_name)]
 
-    name_list: dict[str, int] | None = ALL_ORES.get('Ores', None)
+    name_list: dict[str, int] | None = ALL_ORES.get("Ores", None)
     if name_list is None:
         raise RuntimeError
-    
-    name_list_lower: dict[str, str] = { name.lower(): name for name in name_list }
+
+    name_list_lower: dict[str, str] = {name.lower(): name for name in name_list}
     matches = difflib.get_close_matches(ore_name, name_list_lower.keys(), 25)
 
     if len(matches) == 0:
@@ -386,16 +502,22 @@ def find_closest_names(ore_name: str) -> list[str] | str | None:
 
     return [name_list_lower[match] for match in matches]
 
+
 def ore_name_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
-    if not ctx.value: return ["Enter an ore name!"]
+    if not ctx.value:
+        return ["Enter an ore name!"]
     ore_names = find_closest_names(ctx.value.lower())
-    if not ore_names or len(ore_names) == 0: return ["Enter a valid ore name!"]
+    if not ore_names or len(ore_names) == 0:
+        return ["Enter a valid ore name!"]
     vals = [c for c in ore_names if ctx.value.lower() in c.lower()][:5]
     return vals
 
+
 def cave_type_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
-    if not ctx.value: return ["Enter a cave type!"]
-    return [c for c in CAVE_ORES.keys() if ctx.value.lower() in c.lower()][:5]
+    if not ctx.value:
+        return ["Enter a cave type!"]
+    return [c for c in CAVE_ORES if ctx.value.lower() in c.lower()][:5]
+
 
 def permissions_check(ctx: commands.Context) -> bool:
     if not ctx.author.guild_permissions.administrator and get_permission_level(user_id=ctx.author.id) != PermissionLevel.OWNER:
@@ -403,17 +525,19 @@ def permissions_check(ctx: commands.Context) -> bool:
 
     return True
 
+
 def whitelist_check(ctx: commands.Context) -> bool:
     if get_permission_level(user_id=ctx.author.id) < PermissionLevel.ADMIN:
         raise MissingPermissions()
 
     return True
 
+
 async def handle_error(ctx: discord.ApplicationContext, error: commands.CommandError):
     if isinstance(error, commands.CommandOnCooldown):
         return await ctx.respond(content=f"This command is on cooldown. Retry in {error.retry_after} seconds.", ephemeral=True)
     elif isinstance(error, commands.NotOwner):
-        return await ctx.respond(content=f"You are not the owner of this bot.", ephemeral=True)
+        return await ctx.respond(content="You are not the owner of this bot.", ephemeral=True)
     elif isinstance(error, MissingPermissions):
         return await ctx.respond(content="You are missing the permissions required to run this command.", ephemeral=True)
 
@@ -446,7 +570,7 @@ def get_global_role_ping(ore_name: str, ore_rarity: int, ore_rank: OreTiers, ore
         "serotonin": 432_198_765,
         "prisma": 1_222_222_222,
         "shadow-x": 136_932_133,
-        "∞": 20_000_000_000
+        "∞": 20_000_000_000,
     }
 
     base_ore_rarity: int = get_ore_rarity(ore_name=ore_name, base_rarity=ore_rarity, ore_type=ore_type, cave_type=cave_type, loadout=None, do_adjusted=False, run_nebulova=False)
@@ -484,4 +608,3 @@ def get_global_role_ping(ore_name: str, ore_rarity: int, ore_rank: OreTiers, ore
         return "## <@&1473111240116273214>\n<@&1371968654328991895>\n"
     else:
         return "# ***<@&1473111272538243082>***\n**<@&1473111240116273214>** <@&1371968654328991895>\n"
-    

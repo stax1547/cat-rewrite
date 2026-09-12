@@ -1,16 +1,25 @@
-import discord, enum, json, logging, sqlite3
-from discord.ext import commands
+import enum
+import json
+import logging
+import sqlite3
 from typing import Any, TypeAlias
+
+import discord
+from discord.ext import commands
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot: discord.Bot = discord.Bot(intents=intents)
 
 REX_WEBHOOK_UIDS: tuple[int, int, int] = (
-    1259168578419163166, 1259168752591966229, 1259168868581113947
+    1259168578419163166,
+    1259168752591966229,
+    1259168868581113947,
 )  # stax; rex webhook user ids, normal - spectral
 REX_TRACKER_CHANNEL_IDS: tuple[int, int, int] = (
-    967252613227769876, 967252672170299402, 967252684807749752
+    967252613227769876,
+    967252672170299402,
+    967252684807749752,
 )  # stax; rex tracker channel ids, normal - spectral
 
 DiscordChannel: TypeAlias = discord.TextChannel | discord.VoiceChannel | discord.StageChannel | discord.Thread | discord.DMChannel | discord.GroupChannel | None
@@ -27,6 +36,7 @@ class MissingPermissions(commands.CommandError):
             super().__init__(new_message, *args)
         else:
             super().__init__(*args)
+
 
 db_conn: sqlite3.Connection = sqlite3.connect("database.db")
 db_cursor: sqlite3.Cursor = db_conn.cursor()
@@ -61,7 +71,7 @@ class OreTypes(enum.IntEnum):
 ORE_TYPE_TO_RANK = {
     "NORMAL": OreTypes.NORMAL,
     "IONIZED": OreTypes.IONIZED,
-    "SPECTRAL": OreTypes.SPECTRAL
+    "SPECTRAL": OreTypes.SPECTRAL,
 }
 
 
@@ -82,6 +92,7 @@ class OreTiers(enum.IntEnum):
     ZENITH = 14,
     EXCLUSIVE = 15
 
+
 class TierNames(enum.StrEnum):
     COMMON = "Common",
     UNCOMMON = "Uncommon"
@@ -99,6 +110,7 @@ class TierNames(enum.StrEnum):
     ZENITH = "Zenith"
     EXCLUSIVE = "Exclusive"
 
+
 TIER_COLOR_TO_TIER_NAME = {  # stax; NEVER TOUCH THESE, WILL BREAK TRACKERS!
     "#c1c1c1": TierNames.COMMON,
     "#ff2626": TierNames.UNCOMMON,
@@ -114,7 +126,7 @@ TIER_COLOR_TO_TIER_NAME = {  # stax; NEVER TOUCH THESE, WILL BREAK TRACKERS!
     "#5d0d31": TierNames.OTHERWORLDLY,
     "#ffe89e": TierNames.IMAGINARY,
     "None": TierNames.ZENITH,
-    "#26004b": TierNames.EXCLUSIVE
+    "#26004b": TierNames.EXCLUSIVE,
 }
 
 TIER_NAME_TO_TIER_RANK = {
@@ -132,7 +144,7 @@ TIER_NAME_TO_TIER_RANK = {
     TierNames.OTHERWORLDLY: OreTiers.OTHERWORLDLY,
     TierNames.IMAGINARY: OreTiers.IMAGINARY,
     TierNames.ZENITH: OreTiers.ZENITH,
-    TierNames.EXCLUSIVE: OreTiers.EXCLUSIVE
+    TierNames.EXCLUSIVE: OreTiers.EXCLUSIVE,
 }
 
 TIER_NAME_TO_COLOR_HEX = {
@@ -148,10 +160,11 @@ TIER_NAME_TO_COLOR_HEX = {
     TierNames.ENIGMATIC: 0xCCF500,
     TierNames.UNFATHOMABLE: 0x022B78,
     TierNames.OTHERWORLDLY: 0x5D0D31,
-    TierNames.IMAGINARY: 0XFFE89E,
+    TierNames.IMAGINARY: 0xFFE89E,
     TierNames.ZENITH: 0x010101,
-    TierNames.EXCLUSIVE: 0x26004B
+    TierNames.EXCLUSIVE: 0x26004B,
 }
+
 
 class PermissionLevel(enum.IntEnum):
     DEFAULT = 1,

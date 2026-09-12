@@ -2,43 +2,83 @@
 Miscellaneous cogs. Put commands in here that are non-essential to the functionality of the bot.
 """
 
-import decimal, discord, utils
+import decimal
 
+import discord
 from discord.ext import commands
-from defs import AdjustedPreferences, ALL_ORES, CAVE_ORES, db_conn, db_cursor, OreTypes
+
+import utils
+from defs import (
+    ALL_ORES,
+    CAVE_ORES,
+    AdjustedPreferences,
+    OreTypes,
+    TierNames,
+    db_conn,
+    db_cursor,
+)
+
 
 def get_data_for_ore(ore_name: str, ore_rarity: int) -> utils.OreAttributes | None: 
     tier_name: str = "Common"
     ion_multiplier: int = 1
 
     match ore_name:
-        case "agsperum's charm":
+        case "speatritian" | "trifractite":
+            ion_multiplier = 40
+            tier_name = TierNames.TRANSCENDENT
+        case "melodifrost":
+            ion_multiplier = 50
+            tier_name = TierNames.EXOTIC
+        case (
+            "agsperum's charm"
+            | "aurora polaris"
+            | "aurora sanguinosa"
+            | "enamorasure"
+            | "glacereus"
+            | "gravertia"
+            | "næthyx"
+            | "seraphyst"
+            | "starpower"
+            | "wintravesia"
+        ):
             ion_multiplier = 30
-            tier_name = "Enigmatic"
-        case "protoflare":
+            tier_name = TierNames.ENIGMATIC
+        case "protoflare" | "electrolyx" | "eggsquisite" | "hypersomnia":
             ion_multiplier = 45
-            tier_name = "Exquisite"
+            tier_name = TierNames.EXQUISITE
+        case "azimuth" | "la sangra" | "stygia" | "temporal prism" | "the tower":
+            ion_multiplier = 20
+            tier_name = TierNames.UNFATHOMABLE
         case "superunobtainium":
             ion_multiplier = 60
-            tier_name = "Mythic"
+            tier_name = TierNames.MYTHIC
         case "zanarchium":
             ion_multiplier = 10
-            tier_name = "Zenith"
-        case "corrupt god tycoon crystal" | "stable minicores" | "paste crystal" | "noo p ω" | "delusory bubblegram"\
-            | "illusionary bubblegum" | "cake ore" | "random" | "vantachaos" | "acrimoney" | "360-brat integer limit"\
-            | "oil crystal" | "iridophyte" | "dynamo of fates" | "fantamalgamation" | "vitriol crystal" | "absolute everything"\
-            | "the sun" | "slaylarius":
+            tier_name = TierNames.ZENITH
+        case (
+            "corrupt god tycoon crystal"
+            | "stable minicores"
+            | "paste crystal"
+            | "noo p ω" # noo p omega
+            | "delusory bubblegram"
+            | "illusionary bubblegum"
+            | "cake ore"
+            | "random"
+            | "vantachaos"
+            | "acrimoney"
+            | "360-brat integer limit"
+            | "oil crystal"
+            | "iridophyte"
+            | "dynamo of fates"
+            | "fantamalgamation"
+            | "vitriol crystal"
+            | "absolute everything"
+            | "the sun"
+            | "slaylarius"
+        ):
             ion_multiplier = 10
-            tier_name = "Exclusive"
-        case "aurora polaris":
-            ion_multiplier = 30
-            tier_name = "Enigmatic"
-        case "electrolyx":
-            ion_multiplier = 45
-            tier_name = "Exquisite"
-        case "eggsquisite":
-            ion_multiplier = 45
-            tier_name = "Exquisite"
+            tier_name = TierNames.EXCLUSIVE
         case _:
             if ore_rarity <= 999:  # common
                 ion_multiplier = 110
@@ -60,7 +100,7 @@ def get_data_for_ore(ore_name: str, ore_rarity: int) -> utils.OreAttributes | No
                 tier_name = "Mythic"
             elif 1000000 <= ore_rarity <= 7499999:  # exotic
                 ion_multiplier = 50
-                tier_name = "Exotic" 
+                tier_name = "Exotic"
             elif 7500000 <= ore_rarity <= 14999999:  # exquisite
                 ion_multiplier = 45
                 tier_name = "Exquisite"
@@ -73,10 +113,10 @@ def get_data_for_ore(ore_name: str, ore_rarity: int) -> utils.OreAttributes | No
             elif 100000000 <= ore_rarity <= 774999999:  # unfath
                 ion_multiplier = 20
                 tier_name = "Unfathomable"
-            elif 775000000 <= ore_rarity <= 10000000000 :  # ow
+            elif 775000000 <= ore_rarity <= 10000000000:  # ow
                 ion_multiplier = 15
                 tier_name = "Otherworldly"
-            elif ore_rarity >= 20000000000: # imagine
+            elif ore_rarity >= 20000000000:  # imagine
                 ion_multiplier = 15
                 tier_name = "Imaginary"
 
@@ -87,6 +127,7 @@ def get_data_for_ore(ore_name: str, ore_rarity: int) -> utils.OreAttributes | No
     ore_attributes.ion_mult = ion_multiplier
     ore_attributes.tier_name = tier_name
     return ore_attributes
+
 
 class MiscCommands(commands.Cog):
     def __init__(self, _bot: discord.Bot):
@@ -122,7 +163,7 @@ class MiscCommands(commands.Cog):
                 _preference = AdjustedPreferences.CONSTANT
             case "Show both":
                 _preference = AdjustedPreferences.BOTH
-            case _: # This will never be hit unless I make a typo in the choices...
+            case _:  # This will never be hit unless I make a typo in the choices...
                 _preference = AdjustedPreferences.CONSTANT
 
         db_cursor.execute(
@@ -138,9 +179,12 @@ class MiscCommands(commands.Cog):
         await ctx.respond(content=f"Set adjusted preference to \"{preference}\".")
 
     @commands.slash_command(
-            description="Provides info for an ore given the parameters.",
-            integration_types={ discord.IntegrationType.user_install, discord.IntegrationType.guild_install } # Allow this to be used outside of servers where the bot is.
-        )
+        description="Provides info for an ore given the parameters.",
+        integration_types={
+            discord.IntegrationType.user_install,
+            discord.IntegrationType.guild_install,
+        },  # Allow this to be used outside of servers where the bot is.
+    )
     @commands.cooldown(rate=3, per=5, type=commands.BucketType.user)
     @discord.commands.option("ore_name", str, description="The name of the ore you want the info of", autocomplete=utils.ore_name_autocomplete)
     @discord.commands.option("ore_type", str, description="The variant of the ore", choices=["Normal", "Ionized", "Spectral"], required=False, default="Normal")
@@ -149,7 +193,7 @@ class MiscCommands(commands.Cog):
         self, ctx: discord.ApplicationContext,
         ore_name: str,
         ore_type: str = "Normal",
-        cave_type: str = None,
+        cave_type: str | None = None,
     ):        
         if cave_type is not None and (cave_type.lower() == "none" or ore_name.lower() == "zanarchium"):
             cave_type = None
@@ -158,7 +202,7 @@ class MiscCommands(commands.Cog):
         if cave_type is not None and utils.get_nth_word(cave_type, 2) is None:
             cave_type = f"{cave_type} Cave"
 
-        if cave_type is not None and cave_type not in CAVE_ORES.keys():
+        if cave_type is not None and cave_type not in CAVE_ORES:
             return await ctx.respond(content=f"Cave type \"{cave_type}\" was not found")
         
         base_rarity: int | None = ALL_ORES.get("Ores", {}).get(ore_name)
@@ -166,29 +210,41 @@ class MiscCommands(commands.Cog):
             return await ctx.respond(content=f"Ore name \"{ore_name}\" was not found")
         
         is_cave_exclusive: bool = False
+        is_transformation_exclusive: bool = False
+        is_fusion_exclusive: bool = False
         is_nebulova_event: bool = False
         tier: str = ""
 
         ion_mult: int = 1
-        ore_attr: utils.OreAttributes | None = utils.get_ore_attributes(ore_name=ore_name)
+        ore_attr: utils.OreAttributes | None = utils.get_ore_attributes(
+            ore_name=ore_name
+        )
         if ore_attr is not None:
             ion_mult = ore_attr.ion_mult
             tier = ore_attr.tier_name
             is_cave_exclusive = ore_attr.is_cave_exclusive
-            if ore_attr.cave_type != "Starry Cave" or cave_type is None:
+            is_transformation_exclusive = ore_attr.is_transformation_exclusive
+            is_fusion_exclusive = ore_attr.is_fusion_exclusive
+            if not is_transformation_exclusive and not is_fusion_exclusive and ore_attr.cave_type != "Starry Cave" or cave_type is None:
                 cave_type = ore_attr.cave_type
         else:
-            ore_data: utils.OreAttributes | None = get_data_for_ore(ore_name=ore_name.lower(), ore_rarity=base_rarity)
+            ore_data: utils.OreAttributes | None = get_data_for_ore(
+                ore_name=ore_name.lower(), ore_rarity=base_rarity
+            )
             if ore_data is not None:
                 tier = ore_data.tier_name
                 ion_mult = ore_data.ion_mult
-        
+
+        # Fusion exclusive ores were never able to spawn in caves, but most transformation exclusive ores used to be able to
+        if is_fusion_exclusive or ore_name == "Superunobtainium":
+            cave_type = None
+
         real_cave_type: str | None = cave_type
         if ore_name in CAVE_ORES["Starry Cave"]["ores"] and cave_type is not None:
             if (cave_type == "Gilded Cave" and is_cave_exclusive) or (cave_type != "Starry Cave" and cave_type != "Gilded Cave"):
                 is_nebulova_event = True
                 real_cave_type = "Starry Cave"
-        
+
         if ore_name == "Black Flame":
             if real_cave_type == "Solar Cave":
                 cave_type = "Solar Cave"
@@ -202,12 +258,15 @@ class MiscCommands(commands.Cog):
             base_rarity *= ion_mult * 15
         elif ore_type == "Ionized":
             base_rarity *= ion_mult
-        
+
         if is_nebulova_event:
             base_rarity *= 3
         elif cave_type == "Gilded Cave" and not is_cave_exclusive and ore_name != "Gold":
+        elif (
+            cave_type == "Gilded Cave" and not is_cave_exclusive and ore_name != "Gold"
+        ):
             base_rarity *= 2.5
-        
+
         # IM TOO LAZY TO MAKE EMBEDS RN
         text = ""
         if ore_type != "Normal":
@@ -215,20 +274,30 @@ class MiscCommands(commands.Cog):
         text += f"{ore_name}"
         if cave_type is not None:
             text += f" (*{cave_type}*)"
-        text += f"\nTier: {tier}\n"
-        text += f"Rarity: {round(base_rarity):,}\n"
+        text += f"\nTier: {tier}"
+        if is_transformation_exclusive:
+            if ore_name == "Superunobtainium":
+                text += " (Transformation Exclusive)"
+            else:
+                text += " (Transformation exclusive, *previously a layer ore*)"
+        elif is_fusion_exclusive:
+            text += " (Fusion Exclusive)"
+        text += "\n"
+        if not is_fusion_exclusive and ore_name != "Superunobtainium":
+            text += f"Rarity: {round(base_rarity):,}\n"
         if cave_type is not None:
             adjusted_rarity_norm = utils.get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type, cave_type=cave_type, loadout=None, do_adjusted=True, run_nebulova=False)
             if cave_type == "Gilded Cave":
-                text += f"Adjusted Rarity (5700): 1/{round(adjusted_rarity_norm * decimal.Decimal(1.88)):,} [CC] | 1/{adjusted_rarity_norm:,}\n"
+                text += f"Adjusted Rarity (5700): 1/{round(adjusted_rarity_norm * decimal.Decimal("1.88")):,} [CC] | 1/{adjusted_rarity_norm:,}\n"
                 adjusted_rarity_100_leaf = utils.get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type, cave_type=cave_type, loadout="100 Leaf Clover", do_adjusted=True, run_nebulova=False)
-                text += f"Adjusted Rarity (100): 1/{round(adjusted_rarity_100_leaf * decimal.Decimal(1.88)):,} [CC] | 1/{adjusted_rarity_100_leaf:,}\n"
+                text += f"Adjusted Rarity (100): 1/{round(adjusted_rarity_100_leaf * decimal.Decimal("1.88")):,} [CC] | 1/{adjusted_rarity_100_leaf:,}\n"
                 adjusted_rarity_salad = utils.get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type, cave_type=cave_type, loadout="57 Leaf Clover", do_adjusted=True, run_nebulova=False)
-                text += f"Adjusted Rarity (57): 1/{round(adjusted_rarity_salad * decimal.Decimal(1.88)):,} [CC] | 1/{adjusted_rarity_salad:,}\n"
+                text += f"Adjusted Rarity (57): 1/{round(adjusted_rarity_salad * decimal.Decimal("1.88")):,} [CC] | 1/{adjusted_rarity_salad:,}\n"
             else:
-                text += f"Adjusted Rarity: 1/{round(adjusted_rarity_norm * decimal.Decimal(1.88)):,} [CC] | 1/{adjusted_rarity_norm:,}\n"
-        
+                text += f"Adjusted Rarity: 1/{round(adjusted_rarity_norm * decimal.Decimal('1.88')):,} [CC] | 1/{adjusted_rarity_norm:,}\n"
+
         await ctx.respond(content=text)
+
 
 def setup(_bot: discord.Bot) -> None:
     """

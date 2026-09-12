@@ -1,6 +1,23 @@
-import config, decimal, discord, aiohttp, utils
+import decimal
+
+import aiohttp
+import discord
 from discord import Embed
-from defs import AdjustedPreferences, bot, db_cursor, DiscordChannel, logger, OreTiers, TierNames, TIER_NAME_TO_COLOR_HEX, TIER_NAME_TO_TIER_RANK
+
+import config
+import utils
+from defs import (
+    TIER_NAME_TO_COLOR_HEX,
+    TIER_NAME_TO_TIER_RANK,
+    AdjustedPreferences,
+    DiscordChannel,
+    OreTiers,
+    TierNames,
+    bot,
+    db_cursor,
+    logger,
+)
+
 
 async def report_permission_warning(guild: discord.Guild, is_global_channel: bool) -> None:
     if guild.owner is None:
@@ -77,7 +94,7 @@ def create_embed(
             adjusted_rarity: int = utils.get_ore_rarity(ore_name=ore_name, base_rarity=base_rarity, ore_type=ore_type,
                                                   cave_type=cave_type, loadout=loadout, do_adjusted=True,
                                                   run_nebulova=False)
-            adjusted_rarity_cc = round(adjusted_rarity * decimal.Decimal(1.88))
+            adjusted_rarity_cc = round(adjusted_rarity * decimal.Decimal("1.88"))
             match adjusted_preference:
                 case AdjustedPreferences.BASE:
                     embed.add_field(name="Adjusted Rarity", value=f"1/{adjusted_rarity:,}", inline=False)

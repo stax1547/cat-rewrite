@@ -2,11 +2,14 @@
 Main cogs. Put commands in here that are essential to the functionality of the bot.
 """
 
-import discord, utils
-
+import discord
 from discord.ext import commands
-from defs import db_conn, db_cursor, TIER_NAME_TO_TIER_RANK
+
+import config
+import utils
+from defs import TIER_NAME_TO_TIER_RANK, db_conn, db_cursor
 from embeds import send_data
+
 
 class MainCommands(commands.Cog):
     def __init__(self, _bot: discord.Bot):
@@ -15,7 +18,7 @@ class MainCommands(commands.Cog):
     async def cog_command_error(self, ctx: discord.ApplicationContext, error: commands.CommandError):
         await utils.handle_error(ctx=ctx, error=error)
 
-    @commands.slash_command(guild_ids=[1177151218049618031])
+    @commands.slash_command(guild_ids=[1177151218049618031] if not config.DEV_MODE else None)
     @commands.is_owner()
     async def reload_cogs(self, ctx: discord.ApplicationContext, sync: bool):
         self.bot.reload_extension("commands.main_cogs")
@@ -75,7 +78,7 @@ class MainCommands(commands.Cog):
         db_cursor.execute("DELETE FROM ChannelsPerGuild WHERE guild_id = ?", (ctx.guild.id,))
         db_conn.commit()
 
-        await ctx.respond(content=f"Removed global channel.")
+        await ctx.respond(content="Removed global channel.")
 
     @commands.slash_command(description="Get pinged when the inputted username gets a track.")
     @discord.guild_only()
@@ -103,7 +106,7 @@ class MainCommands(commands.Cog):
         db_cursor.execute("DELETE FROM PingsPerUsername where user_id = ? AND guild_id = ?",
                           (ctx.author.id, ctx.guild_id,))
         db_conn.commit()
-        await ctx.respond(content=f"Removed set pings in this server.")
+        await ctx.respond(content="Removed set pings in this server.")
 
     @commands.slash_command(description="Track an ore globally under a username. Only usable by whitelisted users.")
     @discord.commands.option("ore_name", str, description="The ore's name", autocomplete=utils.ore_name_autocomplete)
@@ -128,7 +131,7 @@ class MainCommands(commands.Cog):
         world: str,
         loadout: str,
         event: str,
-        cave_type: str = None
+        cave_type: str | None = None
     ):
         await send_data(ore_name=ore_name, ore_rarity=base_rarity, cave_type=cave_type, ore_tier=tier,
                         ore_type=ore_type, event=event, world=world, username=username, loadout=loadout,
@@ -160,7 +163,7 @@ class MainCommands(commands.Cog):
         db_cursor.execute("DELETE FROM GlobalMessagePerGuild WHERE guild_id = ?", (ctx.guild.id,))
         db_conn.commit()
 
-        await ctx.respond(content=f"Removed global message.")
+        await ctx.respond(content="Removed global message.")
 
     @commands.slash_command(description="Add usernames to the list of usernames to be tracked.")
     @discord.guild_only()
@@ -185,19 +188,18 @@ class MainCommands(commands.Cog):
         added_users: list[str] = []
         existing_users: list[str] = []
         for name in to_be_added:
-            if 3 <= len(name) <= 50:
-                if name not in ("@everyone", "@here"):
-                    if [ctx.guild_id, name] not in existing_pairs:
-                        db_cursor.execute(
-                            """
+            if 3 <= len(name) <= 50 and name not in ("@everyone", "@here"):
+                if [ctx.guild_id, name] not in existing_pairs:
+                    db_cursor.execute(
+                        """
                             INSERT INTO PlayersPerGuild (guild_id, username)
                             VALUES (?, ?)
                             """,
-                            (ctx.guild_id, name),
-                        )
-                        added_users.append(name)
-                    else:
-                        existing_users.append(name)
+                        (ctx.guild_id, name),
+                    )
+                    added_users.append(name)
+                else:
+                    existing_users.append(name)
 
         db_conn.commit()
 

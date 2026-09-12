@@ -1,9 +1,13 @@
-import re, traceback, asyncio, config
+import asyncio
+import re
+import traceback
+from typing import NoReturn
 
+import config
 from commands.cogs import setup_commands
 from defs import *
 from embeds import send_data
-from typing import NoReturn
+
 
 def create_database() -> None:
     """
@@ -72,6 +76,7 @@ def create_database() -> None:
 
     db_conn.commit()
 
+
 async def update_presence() -> NoReturn:
     while True:
         logger.info("Updating presence...")
@@ -81,10 +86,12 @@ async def update_presence() -> NoReturn:
 
         await bot.change_presence(activity=activity)
 
-        await asyncio.sleep(60 * 10) # Update our presence every 10 minutes.
+        await asyncio.sleep(60 * 10)  # Update our presence every 10 minutes.
+
 
 def fix_up_database() -> None:
     return
+
 
 def main() -> None:
     """
@@ -95,7 +102,7 @@ def main() -> None:
     async def on_connect() -> None:
         print("Bot has connected.")
         logger.debug("Bot has connected.")
-            
+
     @bot.listen()
     async def on_disconnect() -> None:
         print("Bot has disconnected.")
@@ -111,7 +118,7 @@ def main() -> None:
 
         asyncio.create_task(update_presence())
 
-        print("Ready") # stax; do not remove this!
+        print("Ready")  # stax; do not remove this!
 
     @bot.listen()
     async def on_message(message: discord.Message) -> None:
@@ -128,7 +135,7 @@ def main() -> None:
             ore_type: str = TYPE_BY_CHANNEL_IDS[message.channel.id]
 
             if embed_data.title is None:
-                logger.error(f"[on_message] Found a valid message but failed to parse the embed title!\nTitle: None")
+                logger.error("[on_message] Found a valid message but failed to parse the embed title!\nTitle: None")
                 return
             
             reg: re.Match | None = re.match(r"\*\*([a-zA-Z0-9_]+)\*\*.*\*\*(.*)\*\*(?:.*\(\*(.* Cave)\*\))?", embed_data.title)
@@ -144,7 +151,7 @@ def main() -> None:
             if embed_data.color is not None:
                 tier = TIER_COLOR_TO_TIER_NAME.get(str(embed_data.color), None)
                 if tier is None:
-                    logger.error(f"[on_message] Missing color for tier: {str(embed_data.color)} {type(str(embed_data.color))}")
+                    logger.error(f"[on_message] Missing color for tier: {embed_data.color!s} {type(str(embed_data.color))}")
                     logger.debug(f"[on_message] {embed_data.color.r}, {embed_data.color.g}, {embed_data.color.b}, {embed_data.color}\n")
 
             base_rarity: int = int(float(fields[0].value.split()[0].replace("1/", "").replace(",", "")))
@@ -163,7 +170,7 @@ def main() -> None:
                 username=username,
                 loadout=loadout,
                 blocks_mined=blocks_mined,
-                manual_tracked=False
+                manual_tracked=False,
             )
 
     try:
