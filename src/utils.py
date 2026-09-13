@@ -1,3 +1,4 @@
+import dataclasses
 import difflib
 import traceback
 
@@ -17,7 +18,7 @@ from defs import (
     logger,
 )
 
-
+@dataclasses.dataclass(kw_only=True, slots=True)
 class OreAttributes:
     ion_mult: int = 0
     tier_name: str = ""
