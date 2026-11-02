@@ -436,7 +436,7 @@ def is_owner(user_id: int) -> bool:
     return config.DEV_MODE or user_id == 475737475470589952
 
 
-def get_permission_level(user_id: int) -> PermissionLevel:
+async def get_permission_level(user_id: int) -> PermissionLevel:
     """
     Returns permission level for command usage.
 
@@ -452,11 +452,11 @@ def get_permission_level(user_id: int) -> PermissionLevel:
 
     permission_level: PermissionLevel = PermissionLevel.DEFAULT
 
-    bot_guild: discord.Guild | None = bot.get_or_fetch(object_type=discord.Guild, object_id=1177151218049618031)
+    bot_guild: discord.Guild | None = await bot.get_or_fetch(object_type=discord.Guild, object_id=1177151218049618031)
     if bot_guild is None:
         return permission_level
     
-    member: discord.Member | None = bot_guild.get_or_fetch(object_type=discord.Member, object_id=user_id)
+    member: discord.Member | None = await bot_guild.get_or_fetch(object_type=discord.Member, object_id=user_id)
     if member is None:
         return permission_level
     
@@ -520,15 +520,15 @@ def cave_type_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
     return [c for c in CAVE_ORES if ctx.value.lower() in c.lower()][:5]
 
 
-def permissions_check(ctx: commands.Context) -> bool:
-    if not ctx.author.guild_permissions.administrator and get_permission_level(user_id=ctx.author.id) != PermissionLevel.OWNER:
+async def permissions_check(ctx: commands.Context) -> bool:
+    if not ctx.author.guild_permissions.administrator and await get_permission_level(user_id=ctx.author.id) != PermissionLevel.OWNER:
         raise MissingPermissions()
 
     return True
 
 
-def whitelist_check(ctx: commands.Context) -> bool:
-    if get_permission_level(user_id=ctx.author.id) < PermissionLevel.ADMIN:
+async def whitelist_check(ctx: commands.Context) -> bool:
+    if await get_permission_level(user_id=ctx.author.id) < PermissionLevel.ADMIN:
         raise MissingPermissions()
 
     return True
