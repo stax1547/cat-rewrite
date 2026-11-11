@@ -129,6 +129,7 @@ def main() -> None:
             message_data: discord.Message = await message.channel.fetch_message(
                 message.id)  # stax; needed because webhooks dont contain embed data in on_message
             embed_data: discord.Embed = message_data.embeds[0]
+            print(embed_data)
 
             world: str | None = embed_data.description
             fields: list[discord.EmbedField] = embed_data.fields

@@ -487,9 +487,9 @@ def find_closest_names(ore_name: str) -> list[str] | str | None:
     symbol_ores_list: tuple[str] = ("sigma", "pi", "omega", "lunar omega", "delta", "psi", "infinictrite", "noopa", "noo p a")
     number_ores_list: tuple[str] = ("combustion system", "trojan")
     if ore_name in symbol_ores_list:
-        return ("Σ", "π", "Ω", "Lunar Ω", "Δ", "ψ", "∞", "NOO P α", "NOO P α")[symbol_ores_list.index(ore_name)]
+        return [("Σ", "π", "Ω", "Lunar Ω", "Δ", "ψ", "∞", "NOO P α", "NOO P α")[symbol_ores_list.index(ore_name)]]
     elif ore_name in number_ores_list:
-        return ("@Combust10n_+_Syst3m", "TR0J4N")[number_ores_list.index(ore_name)]
+        return [("@Combust10n_+_Syst3m", "TR0J4N")[number_ores_list.index(ore_name)]]
 
     name_list: dict[str, int] | None = ALL_ORES.get("Ores", None)
     if name_list is None:
@@ -502,7 +502,6 @@ def find_closest_names(ore_name: str) -> list[str] | str | None:
         return None
 
     return [name_list_lower[match] for match in matches]
-
 
 def ore_name_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
     if not ctx.value:

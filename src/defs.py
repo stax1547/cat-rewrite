@@ -8,7 +8,8 @@ import discord
 from discord.ext import commands
 
 intents = discord.Intents.default()
-intents.message_content = True
+intents.messages = True
+intents.message_content = False
 bot: discord.Bot = discord.Bot(intents=intents)
 
 REX_WEBHOOK_UIDS: tuple[int, int, int] = (
